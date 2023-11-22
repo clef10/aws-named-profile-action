@@ -1,0 +1,51 @@
+name: Creating AWS named profile
+description: OIDC AWS role to be used as AWS profile
+
+inputs:
+  role-to-assume:
+    description: ARN of the IAM Role to assume
+    required: true
+  profile:
+    description: AWS profile name to create 
+    required: true
+  region:
+    description: AWS region to use 
+    required: true
+
+env:
+  AWS_REGION: ${{ inputs.region }}
+  AWS_PROFILE: ${{ inputs.profile }}
+  AWS_ROLE_TO_ASSUME: ${{ inputs.role-to-assume }}
+
+runs:
+  using: "composite"
+  steps:
+  - name: Configure AWS Credentials
+    uses: aws-actions/configure-aws-credentials@v4
+    id: creds
+    with:
+      role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+      aws-region: ${{ env.AWS_REGION }}
+      output-credentials: true
+      unset-current-credentials: true
+
+  - name: Setup AWS Profile
+    run: |
+      aws configure set region ${{ env.AWS_REGION }} --profile ${{ env.AWS_PROFILE }}
+      aws configure set aws_access_key_id ${{ steps.creds.outputs.aws-access-key-id }} --profile ${{ env.AWS_PROFILE }}
+      aws configure set aws_secret_access_key ${{ steps.creds.outputs.aws-secret-access-key }} --profile ${{ env.AWS_PROFILE }}
+      aws configure set aws_session_token ${{ steps.creds.outputs.aws-session-token }} --profile ${{ env.AWS_PROFILE }}
+
+  - name: Verify the profile
+    run: aws sts get-caller-identity --profile ${{ env.AWS_PROFILE }}
+    shell: bash
+
+outputs:
+  aws-account-id:
+    value: ${{ steps.creds.outputs.aws-account-id }}
+  aws-access-key-id:
+    value: ${{ steps.creds.outputs.aws-access-key-id }}
+  aws-secret-access-key:
+    value: ${{ steps.creds.outputs.aws-secret-access-key }}
+  aws-session-token:
+    value: ${{ steps.creds.outputs.aws-session-token }}
