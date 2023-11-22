@@ -12,11 +12,6 @@ inputs:
     description: AWS region to use 
     required: true
 
-env:
-  AWS_REGION: ${{ inputs.region }}
-  AWS_PROFILE: ${{ inputs.profile }}
-  AWS_ROLE_TO_ASSUME: ${{ inputs.role-to-assume }}
-
 runs:
   using: "composite"
   steps:
@@ -28,6 +23,9 @@ runs:
       aws-region: ${{ env.AWS_REGION }}
       output-credentials: true
       unset-current-credentials: true
+    env:
+      AWS_REGION: ${{ inputs.region }}
+      AWS_ROLE_TO_ASSUME: ${{ inputs.role-to-assume }}
 
   - name: Setup AWS Profile
     run: |
@@ -35,17 +33,27 @@ runs:
       aws configure set aws_access_key_id ${{ steps.creds.outputs.aws-access-key-id }} --profile ${{ env.AWS_PROFILE }}
       aws configure set aws_secret_access_key ${{ steps.creds.outputs.aws-secret-access-key }} --profile ${{ env.AWS_PROFILE }}
       aws configure set aws_session_token ${{ steps.creds.outputs.aws-session-token }} --profile ${{ env.AWS_PROFILE }}
+    shell: bash
+    env:
+      AWS_REGION: ${{ inputs.region }}
+      AWS_PROFILE: ${{ inputs.profile }}
 
-  - name: Verify the profile
+  - name: Verify AWS profile
     run: aws sts get-caller-identity --profile ${{ env.AWS_PROFILE }}
     shell: bash
+    env:
+      AWS_PROFILE: ${{ inputs.profile }}
 
 outputs:
   aws-account-id:
+    description: AWS Account ID
     value: ${{ steps.creds.outputs.aws-account-id }}
   aws-access-key-id:
+    description: AWS Access Key ID
     value: ${{ steps.creds.outputs.aws-access-key-id }}
   aws-secret-access-key:
+    description: AWS Secret Key
     value: ${{ steps.creds.outputs.aws-secret-access-key }}
   aws-session-token:
+    description: AWS Session Token
     value: ${{ steps.creds.outputs.aws-session-token }}
